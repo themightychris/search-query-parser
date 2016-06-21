@@ -60,11 +60,7 @@ class QueryParser
 
                 case self::STATE_READY:
                     if (static::isSpace($character)) {
-                        // flush any buffered term
-                        if ($this->term) {
-                            $this->terms[] = $this->term;
-                            $this->term = '';
-                        }
+                        $this->flushTerm();
 
                         // ignore space in ready state
                         continue 2;
@@ -86,11 +82,7 @@ class QueryParser
 
                 case self::STATE_WORD:
                     if (static::isSpace($character)) {
-                        // flush any buffered term
-                        if ($this->term) {
-                            $this->terms[] = $this->term;
-                            $this->term = '';
-                        }
+                        $this->flushTerm();
 
                         // finish reading unquoted term
                         $this->state = self::STATE_READY;
@@ -122,10 +114,19 @@ class QueryParser
         }
 
         // flush any remaining term
-        if ($this->term) {
-            $this->terms[] = $this->term;
-        }
+        $this->flushTerm();
 
         return $this->terms;
+    }
+
+    protected function flushTerm()
+    {
+        if (!$this->term) {
+            return false;
+        }
+
+        $this->terms[] = $this->term;
+
+        $this->term = '';
     }
 }
