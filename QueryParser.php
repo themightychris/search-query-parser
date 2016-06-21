@@ -33,29 +33,19 @@ class QueryParser
 
     protected function parse()
     {
-        $query = $this->query;
-        $maxIndex = strlen($query) - 1;
+        while ($this->cursor < $this->cursorMax) {
+            $character = $this->query[$this->cursor++];
 
-        $terms = array();
-        $term = '';
-        $parsedIndex = 0;
-        $cursorIndex = 0;
-        $state = self::STATE_READY;
-        $quote = null;
+            printf("%u\t%s\t%u\t%s\n", $this->cursor - 1, $character, $this->state, $this->term);
 
-        while ($cursorIndex < $maxIndex) {
-            $character = $query[$cursorIndex++];
-
-            printf("%u\t%s\t%u\t%s\n", $cursorIndex - 1, $character, $state, $term);
-
-            switch ($state) {
+            switch ($this->state) {
 
                 case self::STATE_READY:
                     if (ctype_space($character)) {
                         // flush any buffered term
-                        if ($term) {
-                            $terms[] = $term;
-                            $term = '';
+                        if ($this->term) {
+                            $this->terms[] = $this->term;
+                            $this->term = '';
                         }
 
                         // ignore space in ready state
@@ -64,14 +54,14 @@ class QueryParser
 
                     if ($character == '"' || $character == '\'') {
                         // start reading quoted term
-                        $quote = $character;
-                        $state = self::STATE_QUOTED;
+                        $this->quote = $character;
+                        $this->state = self::STATE_QUOTED;
                         continue 2;
                     }
 
                     if ($character != ':') {
                         // start reading unquoted term
-                        $state = self::STATE_WORD;
+                        $this->state = self::STATE_WORD;
                     }
 
                     break;
@@ -79,29 +69,29 @@ class QueryParser
                 case self::STATE_WORD:
                     if (ctype_space($character)) {
                         // flush any buffered term
-                        if ($term) {
-                            $terms[] = $term;
-                            $term = '';
+                        if ($this->term) {
+                            $this->terms[] = $this->term;
+                            $this->term = '';
                         }
 
                         // finish reading unquoted term
-                        $state = self::STATE_READY;
+                        $this->state = self::STATE_READY;
                         continue 2;
                     }
 
                     if ($character == ':') {
                         // start reading a qualified term
-                        $state = self::STATE_READY;
+                        $this->state = self::STATE_READY;
                     }
 
                     // continue reading unquoted term
                     break;
 
                 case self::STATE_QUOTED:
-                    if ($character == $quote) {
+                    if ($character == $this->quote) {
                         // finish reading quoted term
-                        $quote = null;
-                        $state = self::STATE_READY;
+                        $this->quote = null;
+                        $this->state = self::STATE_READY;
                         continue 2;
                     }
 
@@ -110,15 +100,15 @@ class QueryParser
             }
 
             // append charcter to current term if no cases continued the loop
-            $term .= $character;
+            $this->term .= $character;
         }
 
         // flush any remaining term
-        if ($term) {
-            $terms[] = $term;
+        if ($this->term) {
+            $this->terms[] = $this->term;
         }
 
-        return $terms;
+        return $this->terms;
     }
 }
 
