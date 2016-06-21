@@ -114,14 +114,23 @@ class SearchStringParser
         while ($this->cursor <= $this->cursorMax) {
             $character = $this->string[$this->cursor];
 
-            if (!$string && static::isQuote($character)) {
+            if (!$quote && static::isQuote($character)) {
                 // advance cursor and begin quote
                 $this->cursor++;
                 $quote = $character;
             } elseif ($character === $quote) {
-                // advance cursor and finish string
+                $stringLast = strlen($string) - 1;
+
+                if ($string[$stringLast] == '\\') {
+                    // replace escape sequence with quote
+                    $string[$stringLast] = $character;
+                } else {
+                    // exit quote mode
+                    $quote = null;
+                }
+
+                // advance cursor
                 $this->cursor++;
-                break;
             } elseif (!$quote && (static::isSpace($character) || ($stopAtDelimiter && static::isDelimiter($character)))) {
                 // finish string without advancing cursor
                 break;

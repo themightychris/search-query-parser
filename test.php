@@ -20,7 +20,9 @@ $tests = [
     ':term'                                             => [ 'qualifier' => null,                       'term' => 'term' ],
     'garbage:after:'                                    => [ 'qualifier' => 'garbage',                  'term' => 'after:' ],
     ':garbage:before'                                   => [ 'qualifier' => null,                       'term' => 'garbage:before' ],
-    'middle"quote'                                      => [ 'qualifier' => null,                       'term' => 'middle"quote' ]
+    'con"tained"quote'                                  => [ 'qualifier' => null,                       'term' => 'containedquote' ],
+    '"quote"with:garbage'                               => [ 'qualifier' => 'quotewith',                'term' => 'garbage' ],
+    '"Qualified \" with escaped":\'Term\\\'s Quoted\''    => [ 'qualifier' => 'Qualified " with escaped', 'term' => 'Term\'s Quoted' ]
 ];
 
 $inputTerms = array_keys($tests);
