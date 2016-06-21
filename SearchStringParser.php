@@ -1,36 +1,38 @@
 <?php
 
-class QueryParser
+namespace Emergence;
+
+class SearchStringParser
 {
     public static $debug = false;
     public static $quotes = '\'"‘’“”';
 
-    // query state
-    protected $query;
+    // parser state
+    protected $string;
     protected $cursorMax;
     protected $terms = [];
 
-    // parser internal state
+    // scanning state
     protected $qualifier = '';
     protected $term = '';
     protected $cursor = 0;
     protected $state = self::STATE_READY;
 
-    // parser state modes
+    // scanning state modes
     const STATE_READY = 0;
     const STATE_QUALIFIER = 1;
     const STATE_TERM = 2;
 
 
-    function __construct($query)
+    function __construct($string)
     {
-        $this->query = $query;
-        $this->cursorMax = strlen($query) - 1;
+        $this->string = $string;
+        $this->cursorMax = strlen($string) - 1;
     }
 
-    public static function parseString($query)
+    public static function parseString($string)
     {
-        return (new static($query))->parse();
+        return (new static($string))->parse();
     }
 
     protected static function isQuote($character)
@@ -50,15 +52,15 @@ class QueryParser
 
     protected function parse()
     {
-        static::$debug && printf("Parsing query: %s\n\n", $this->query);
+        static::$debug && printf("Parsing string: %s\n\n", $this->string);
 
         while ($this->cursor <= $this->cursorMax) {
-            static::$debug && printf("%u\t%s\t%u\t%s\t%s\n", $this->cursor, json_encode($this->query[$this->cursor]), $this->state, $this->qualifier, $this->term);
+            static::$debug && printf("%u\t%s\t%u\t%s\t%s\n", $this->cursor, json_encode($this->string[$this->cursor]), $this->state, $this->qualifier, $this->term);
 
             switch ($this->state) {
 
                 case self::STATE_READY:
-                    $character = $this->query[$this->cursor];
+                    $character = $this->string[$this->cursor];
 
                     if (static::isSpace($character)) {
                         // ignore space in ready state
@@ -81,7 +83,7 @@ class QueryParser
 
                     $this->qualifier = $this->readSubstring();
 
-                    if ($this->cursor <= $this->cursorMax && static::isDelimiter($this->query[$this->cursor])) {
+                    if ($this->cursor <= $this->cursorMax && static::isDelimiter($this->string[$this->cursor])) {
                         // consume delimeter and prepare to read term
                         $this->state = self::STATE_TERM;
                         $this->cursor++;
@@ -110,7 +112,7 @@ class QueryParser
         $quote = null;
 
         while ($this->cursor <= $this->cursorMax) {
-            $character = $this->query[$this->cursor];
+            $character = $this->string[$this->cursor];
 
             if (!$string && static::isQuote($character)) {
                 // advance cursor and begin quote

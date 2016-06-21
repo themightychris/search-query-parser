@@ -2,8 +2,8 @@
 
 set_time_limit(1);
 
-require('./QueryParser.php');
-QueryParser::$debug = true;
+require('./SearchStringParser.php');
+Emergence\SearchStringParser::$debug = true;
 
 
 $tests = [
@@ -25,7 +25,7 @@ $tests = [
 
 $inputTerms = array_keys($tests);
 
-$parsed = QueryParser::parseString("  \t".implode(' ', $inputTerms));
+$parsed = Emergence\SearchStringParser::parseString("  \t".implode(' ', $inputTerms));
 
 $passedCount = 0;
 $failedCount = 0;
