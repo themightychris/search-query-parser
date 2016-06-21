@@ -1,5 +1,7 @@
 <?php
 
+set_time_limit(1);
+
 require('./QueryParser.php');
 QueryParser::$debug = true;
 
@@ -13,47 +15,43 @@ $tests = [
     '"Termless qualifier w/ :":'                        => [ 'qualifier' => 'Termless qualifier w/ :',  'term' => null ],
     '"Bare term with :"'                                => [ 'qualifier' => null,                       'term' => 'Bare term with :' ],
     '\'single quoted string\''                          => [ 'qualifier' => null,                       'term' => 'single quoted string' ],
-    ':'                                                 => [ 'qualifier' => null,                       'term' => ':' ],
+    ':'                                                 => null,
     'qualifier:'                                        => [ 'qualifier' => 'qualifier',                'term' => null ],
     ':term'                                             => [ 'qualifier' => null,                       'term' => 'term' ],
     'garbage:after:'                                    => [ 'qualifier' => 'garbage',                  'term' => 'after:' ],
-    ':garbage:before'                                   => [ 'qualifier' => null,                       'term' => 'garbage:before' ]
+    ':garbage:before'                                   => [ 'qualifier' => null,                       'term' => 'garbage:before' ],
+    'middle"quote'                                      => [ 'qualifier' => null,                       'term' => 'middle"quote' ]
 ];
 
 $inputTerms = array_keys($tests);
 
-$parsed = QueryParser::parseString(implode(' ', $inputTerms));
+$parsed = QueryParser::parseString("  \t".implode(' ', $inputTerms));
 
 $passedCount = 0;
 $failedCount = 0;
+$nullCount = 0;
 foreach ($inputTerms AS $i => $inputTerm) {
     printf("\nInput #%u: %s\n\n", $i, $inputTerm);
 
-    if ($i >= count($parsed)) {
+    $resultIndex = $i - $nullCount;
+
+    if ($resultIndex >= count($parsed)) {
         $passed = false;
 
-        printf("\tNot parsed\n");
+        printf("\End of results\n");
+    } elseif (!$tests[$inputTerm]) {
+        $passed = true;
+        $nullCount++;
+
+        printf("\tShould not have result\n");
     } else {
-        // TODO: remove this conversion after parser updated
-        if (is_string($parsed[$i])) {
-            printf("\t        Raw result: %s\n", var_export($parsed[$i], true));
-
-            @list ($qualifier, $term) = explode(':', $parsed[$i], 2);
-            if (!$term) {
-                $term = $qualifier;
-                $qualifier = null;
-            }
-
-            $parsed[$i] = [ 'qualifier' => $qualifier ?: null, 'term' => $term ?: null ];
-        }
-
         printf("\tExpected qualifier: %s\n", var_export($tests[$inputTerm]['qualifier'], true));
-        printf("\t  Parsed qualifier: %s\n", var_export($parsed[$i]['qualifier'], true));
+        printf("\t  Parsed qualifier: %s\n", var_export($parsed[$resultIndex]['qualifier'], true));
         printf("\t     Expected term: %s\n", var_export($tests[$inputTerm]['term'], true));
-        printf("\t       Parsed term: %s\n", var_export($parsed[$i]['term'], true));
+        printf("\t       Parsed term: %s\n", var_export($parsed[$resultIndex]['term'], true));
         $passed = (
-            $tests[$inputTerm]['qualifier'] === $parsed[$i]['qualifier']
-            && $tests[$inputTerm]['term'] === $parsed[$i]['term']
+            $tests[$inputTerm]['qualifier'] === $parsed[$resultIndex]['qualifier']
+            && $tests[$inputTerm]['term'] === $parsed[$resultIndex]['term']
         );
 
     }
@@ -68,3 +66,7 @@ foreach ($inputTerms AS $i => $inputTerm) {
 }
 
 printf("\n\nPassed: %u\nFailed: %u\n", $passedCount, $failedCount);
+
+
+
+// print_r(['cursor' => $this->cursor, 'character' => $this->query[$this->cursor], 'remaining' => substr($this->query, $this->cursor), 'qualifier' => $this->qualifier, 'term' => $this->term])

@@ -14,13 +14,12 @@ class QueryParser
     protected $qualifier = '';
     protected $term = '';
     protected $cursor = 0;
-    protected $quote = null;
     protected $state = self::STATE_READY;
 
     // parser state modes
     const STATE_READY = 0;
-    const STATE_WORD = 1;
-    const STATE_QUOTED = 2;
+    const STATE_QUALIFIER = 1;
+    const STATE_TERM = 2;
 
 
     function __construct($query)
@@ -44,89 +43,111 @@ class QueryParser
         return ctype_space($character);
     }
 
-    protected static function isQualifierDelimiter($character)
+    protected static function isDelimiter($character)
     {
         return $character == ':';
     }
 
     protected function parse()
     {
-        while ($this->cursor <= $this->cursorMax) {
-            $character = $this->query[$this->cursor++];
+        static::$debug && printf("Parsing query: %s\n\n", $this->query);
 
-            static::$debug && printf("%u\t%s\t%u\t%s\n", $this->cursor - 1, $character, $this->state, $this->term);
+        while ($this->cursor <= $this->cursorMax) {
+            static::$debug && printf("%u\t%s\t%u\t%s\t%s\n", $this->cursor, json_encode($this->query[$this->cursor]), $this->state, $this->qualifier, $this->term);
 
             switch ($this->state) {
 
                 case self::STATE_READY:
-                    if (static::isSpace($character)) {
-                        $this->flushTerm();
+                    $character = $this->query[$this->cursor];
 
+                    if (static::isSpace($character)) {
                         // ignore space in ready state
-                        continue 2;
+                        $this->cursor++;
+                        break;
                     }
 
-                    if (static::isQuote($character)) {
-                        // start reading quoted term
-                        $this->quote = $character;
-                        $this->state = self::STATE_QUOTED;
-                        continue 2;
+                    if (static::isDelimiter($character)) {
+                        // ignore delimiter and jump to term mode
+                        $this->state = self::STATE_TERM;
+                        $this->cursor++;
+                        break;
                     }
 
-                    if (!static::isQualifierDelimiter($character)) {
-                        // start reading unquoted term
-                        $this->state = self::STATE_WORD;
-                    }
-
+                    // begin in qualifier mode and continue scan without advancing cursor
+                    $this->state = self::STATE_QUALIFIER;
                     break;
 
-                case self::STATE_WORD:
-                    if (static::isSpace($character)) {
-                        $this->flushTerm();
+                case self::STATE_QUALIFIER:
 
-                        // finish reading unquoted term
-                        $this->state = self::STATE_READY;
-                        continue 2;
+                    $this->qualifier = $this->readSubstring();
+
+                    if ($this->cursor <= $this->cursorMax && static::isDelimiter($this->query[$this->cursor])) {
+                        // consume delimeter and prepare to read term
+                        $this->state = self::STATE_TERM;
+                        $this->cursor++;
+                        break;
                     }
 
-                    if (static::isQualifierDelimiter($character)) {
-                        // start reading a qualified term
-                        $this->state = self::STATE_READY;
-                    }
-
-                    // continue reading unquoted term
+                    // if there is no delimiter coming, this was a term
+                    $this->term = $this->qualifier;
+                    $this->qualifier = '';
+                    $this->flushTerm();
                     break;
 
-                case self::STATE_QUOTED:
-                    if ($character == $this->quote) {
-                        // finish reading quoted term
-                        $this->quote = null;
-                        $this->state = self::STATE_READY;
-                        continue 2;
-                    }
-
-                    // continue reading quoted term
+                case self::STATE_TERM:
+                    $this->term = $this->readSubstring(false);
+                    $this->flushTerm();
                     break;
             }
-
-            // append charcter to current term if no cases continued the loop
-            $this->term .= $character;
         }
-
-        // flush any remaining term
-        $this->flushTerm();
 
         return $this->terms;
     }
 
-    protected function flushTerm()
+    protected function readSubstring($stopAtDelimiter = true)
     {
-        if (!$this->term) {
-            return false;
+        $string = '';
+        $quote = null;
+
+        while ($this->cursor <= $this->cursorMax) {
+            $character = $this->query[$this->cursor];
+
+            if (!$string && static::isQuote($character)) {
+                // advance cursor and begin quote
+                $this->cursor++;
+                $quote = $character;
+            } elseif ($character === $quote) {
+                // advance cursor and finish string
+                $this->cursor++;
+                break;
+            } elseif (!$quote && (static::isSpace($character) || ($stopAtDelimiter && static::isDelimiter($character)))) {
+                // finish string without advancing cursor
+                break;
+            } else {
+                // advance cursor and consume character
+                $this->cursor++;
+                $string .= $character;
+            }
         }
 
-        $this->terms[] = $this->term;
-
-        $this->term = '';
+        static::$debug && printf("Read substring: %s\n", var_export($string, true));
+        return $string;
     }
+
+     protected function flushTerm()
+     {
+        if ($this->term || $this->qualifier) {
+            $this->terms[] = [
+                'qualifier' => $this->qualifier ?: null,
+                'term' => $this->term ?: null
+            ];
+
+            $this->qualifier = '';
+            $this->term = '';
+
+            static::$debug && printf("Flushed term: %s\n", print_r($this->terms[count($this->terms)-1], true));
+        }
+
+        $this->state = self::STATE_READY;
+     }
 }
