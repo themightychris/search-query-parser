@@ -16,6 +16,8 @@ $tests = [
     ':'                                                 => [ 'qualifier' => null,                       'term' => ':' ],
     'qualifier:'                                        => [ 'qualifier' => 'qualifier',                'term' => null ],
     ':term'                                             => [ 'qualifier' => null,                       'term' => 'term' ],
+    'garbage:after:'                                    => [ 'qualifier' => 'garbage',                  'term' => 'after:' ],
+    ':garbage:before'                                   => [ 'qualifier' => null,                       'term' => 'garbage:before' ]
 ];
 
 $inputTerms = array_keys($tests);
