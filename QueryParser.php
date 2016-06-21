@@ -3,6 +3,7 @@
 class QueryParser
 {
     public static $debug = false;
+    public static $quotes = '\'"‘’“”';
 
     // query state
     protected $query;
@@ -33,6 +34,21 @@ class QueryParser
         return (new static($query))->parse();
     }
 
+    protected static function isQuote($character)
+    {
+        return strpos(static::$quotes, $character) !== false;
+    }
+
+    protected static function isSpace($character)
+    {
+        return ctype_space($character);
+    }
+
+    protected static function isQualifierDelimiter($character)
+    {
+        return $character == ':';
+    }
+
     protected function parse()
     {
         while ($this->cursor < $this->cursorMax) {
@@ -43,7 +59,7 @@ class QueryParser
             switch ($this->state) {
 
                 case self::STATE_READY:
-                    if (ctype_space($character)) {
+                    if (static::isSpace($character)) {
                         // flush any buffered term
                         if ($this->term) {
                             $this->terms[] = $this->term;
@@ -54,14 +70,14 @@ class QueryParser
                         continue 2;
                     }
 
-                    if ($character == '"' || $character == '\'') {
+                    if (static::isQuote($character)) {
                         // start reading quoted term
                         $this->quote = $character;
                         $this->state = self::STATE_QUOTED;
                         continue 2;
                     }
 
-                    if ($character != ':') {
+                    if (!static::isQualifierDelimiter($character)) {
                         // start reading unquoted term
                         $this->state = self::STATE_WORD;
                     }
@@ -69,7 +85,7 @@ class QueryParser
                     break;
 
                 case self::STATE_WORD:
-                    if (ctype_space($character)) {
+                    if (static::isSpace($character)) {
                         // flush any buffered term
                         if ($this->term) {
                             $this->terms[] = $this->term;
@@ -81,7 +97,7 @@ class QueryParser
                         continue 2;
                     }
 
-                    if ($character == ':') {
+                    if (static::isQualifierDelimiter($character)) {
                         // start reading a qualified term
                         $this->state = self::STATE_READY;
                     }
