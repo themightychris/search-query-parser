@@ -2,15 +2,38 @@
 
 class QueryParser
 {
-    // public static function parse($query) {
-    //     return str_getcsv($query, ' ');
-    // }
+    // query state
+    protected $query;
+    protected $cursorMax;
+    protected $terms = [];
 
+    // parser internal state
+    protected $qualifier = '';
+    protected $term = '';
+    protected $cursor = 0;
+    protected $quote = null;
+    protected $state = self::STATE_READY;
+
+    // parser state modes
     const STATE_READY = 0;
     const STATE_WORD = 1;
     const STATE_QUOTED = 2;
 
-    public static function parse($query) {
+
+    function __construct($query)
+    {
+        $this->query = $query;
+        $this->cursorMax = strlen($query) - 1;
+    }
+
+    public static function parseString($query)
+    {
+        return (new static($query))->parse();
+    }
+
+    protected function parse()
+    {
+        $query = $this->query;
         $maxIndex = strlen($query) - 1;
 
         $terms = array();
@@ -101,7 +124,7 @@ class QueryParser
 
 
 $testString = 'ExperienceType:"Core Studio" Status:Ready "Spaced Qualifier":OK "Another Spaced Qualifier":"With a spaced value" :"Unqualified term with :" "Termless qualifier w/ :": "Bare term with :" \'single quoted string\' : qualifier: :term';
-$parsed = QueryParser::parse($testString);
+$parsed = QueryParser::parseString($testString);
 
 print("\n\nTest String: $testString\n\n");
 print_r($parsed);
