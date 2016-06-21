@@ -51,7 +51,7 @@ class QueryParser
 
     protected function parse()
     {
-        while ($this->cursor < $this->cursorMax) {
+        while ($this->cursor <= $this->cursorMax) {
             $character = $this->query[$this->cursor++];
 
             static::$debug && printf("%u\t%s\t%u\t%s\n", $this->cursor - 1, $character, $this->state, $this->term);
