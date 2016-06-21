@@ -2,6 +2,8 @@
 
 class QueryParser
 {
+    public static $debug = false;
+
     // query state
     protected $query;
     protected $cursorMax;
@@ -36,7 +38,7 @@ class QueryParser
         while ($this->cursor < $this->cursorMax) {
             $character = $this->query[$this->cursor++];
 
-            printf("%u\t%s\t%u\t%s\n", $this->cursor - 1, $character, $this->state, $this->term);
+            static::$debug && printf("%u\t%s\t%u\t%s\n", $this->cursor - 1, $character, $this->state, $this->term);
 
             switch ($this->state) {
 
@@ -111,11 +113,3 @@ class QueryParser
         return $this->terms;
     }
 }
-
-
-$testString = 'ExperienceType:"Core Studio" Status:Ready "Spaced Qualifier":OK "Another Spaced Qualifier":"With a spaced value" :"Unqualified term with :" "Termless qualifier w/ :": "Bare term with :" \'single quoted string\' : qualifier: :term';
-$parsed = QueryParser::parseString($testString);
-
-print("\n\nTest String: $testString\n\n");
-print_r($parsed);
-
