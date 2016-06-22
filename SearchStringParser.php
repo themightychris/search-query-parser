@@ -63,13 +63,13 @@ class SearchStringParser
                     $character = $this->string[$this->cursor];
 
                     if (static::isSpace($character)) {
-                        // ignore space in ready state
+                        // skip space in ready state
                         $this->cursor++;
                         break;
                     }
 
                     if (static::isDelimiter($character)) {
-                        // ignore delimiter and jump to term mode
+                        // skip delimiter and jump to term mode
                         $this->state = self::STATE_TERM;
                         $this->cursor++;
                         break;
@@ -89,7 +89,7 @@ class SearchStringParser
                         break;
                     }
 
-                    // consume delimeter and continue into term parsing
+                    // skip delimeter and continue into term parsing
                     $this->cursor++;
 
                 case self::STATE_TERM:
@@ -111,7 +111,7 @@ class SearchStringParser
             $character = $this->string[$this->cursor];
 
             if (!$quote && static::isQuote($character)) {
-                // advance cursor and begin quoted region
+                // advance cursor, skip opening quote mark, and begin quoted region
                 $this->cursor++;
                 $quote = $character;
             } elseif ($character === $quote) {
@@ -125,7 +125,7 @@ class SearchStringParser
                     $quote = null;
                 }
 
-                // advance cursor
+                // advance cursor and skip closing quote mark
                 $this->cursor++;
             } elseif (!$quote && (static::isSpace($character) || ($stopAtDelimiter && static::isDelimiter($character)))) {
                 // finish string without advancing cursor
