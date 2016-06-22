@@ -115,7 +115,7 @@ class SearchStringParser
             $character = $this->string[$this->cursor];
 
             if (!$quote && static::isQuote($character)) {
-                // advance cursor and begin quote
+                // advance cursor and begin quoted region
                 $this->cursor++;
                 $quote = $character;
             } elseif ($character === $quote) {
@@ -125,7 +125,7 @@ class SearchStringParser
                     // replace escape sequence with quote
                     $string[$stringLast] = $character;
                 } else {
-                    // exit quote mode
+                    // end quoted region
                     $quote = null;
                 }
 
