@@ -75,26 +75,22 @@ class SearchStringParser
                         break;
                     }
 
-                    // begin in qualifier mode and continue scan without advancing cursor
-                    $this->state = self::STATE_QUALIFIER;
-                    break;
+                    // continue into qualifier mode and continue scan without advancing cursor
 
                 case self::STATE_QUALIFIER:
 
                     $this->qualifier = $this->readSubstring();
 
-                    if ($this->cursor <= $this->cursorMax && static::isDelimiter($this->string[$this->cursor])) {
-                        // consume delimeter and prepare to read term
-                        $this->state = self::STATE_TERM;
-                        $this->cursor++;
+                    if ($this->cursor > $this->cursorMax || !static::isDelimiter($this->string[$this->cursor])) {
+                        // if there is no delimiter coming, this was a term
+                        $this->term = $this->qualifier;
+                        $this->qualifier = '';
+                        $this->flushTerm();
                         break;
                     }
 
-                    // if there is no delimiter coming, this was a term
-                    $this->term = $this->qualifier;
-                    $this->qualifier = '';
-                    $this->flushTerm();
-                    break;
+                    // consume delimeter and continue into term parsing
+                    $this->cursor++;
 
                 case self::STATE_TERM:
                     $this->term = $this->readSubstring(false);
